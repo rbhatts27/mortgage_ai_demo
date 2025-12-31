@@ -43,12 +43,18 @@ export async function POST(request: NextRequest) {
       await saveMessage(conversationId, 'assistant', aiResponse.message);
 
       // Build TwiML response
+      const webhookUrl = new URL('/api/webhooks/voice', request.url).toString();
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">${aiResponse.message}</Say>
   ${aiResponse.shouldHandoff
     ? '<Dial><Queue>human_agents</Queue></Dial>'
-    : '<Gather input="speech" action="/api/webhooks/voice" timeout="3" speechTimeout="auto"><Say>How else can I help you?</Say></Gather>'
+    : `<Gather input="speech" action="${webhookUrl}" timeout="5" speechTimeout="auto">
+    <Say voice="Polly.Joanna">How else can I help you?</Say>
+  </Gather>
+  <Say voice="Polly.Joanna">I didn't hear anything. Let me connect you with a human agent.</Say>
+  <Dial><Queue>human_agents</Queue></Dial>`
   }
 </Response>`;
 
@@ -58,10 +64,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Initial greeting
+    const webhookUrl = new URL('/api/webhooks/voice', request.url).toString();
+
     const greeting = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">Hello! I'm Sarah, your AI mortgage assistant. How can I help you today?</Say>
-  <Gather input="speech" action="/api/webhooks/voice" timeout="3" speechTimeout="auto" />
+  <Gather input="speech" action="${webhookUrl}" timeout="5" speechTimeout="auto">
+    <Say voice="Polly.Joanna">Hello! I'm Sarah, your AI mortgage assistant. How can I help you today?</Say>
+  </Gather>
+  <Say voice="Polly.Joanna">I didn't hear anything. Goodbye!</Say>
+  <Hangup/>
 </Response>`;
 
     return new NextResponse(greeting, {
