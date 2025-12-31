@@ -3,12 +3,43 @@ import { supabaseAdmin } from './supabase';
 import type { AIResponse, ConversationContext, ConversationMessage } from './types';
 
 /**
+ * Get or create a customer profile
+ */
+export async function getOrCreateCustomerProfile(
+  customerPhone: string
+): Promise<void> {
+  // Check if profile exists
+  const { data: existing } = await supabaseAdmin
+    .from('customer_profiles')
+    .select('phone')
+    .eq('phone', customerPhone)
+    .single();
+
+  // If profile doesn't exist, create it
+  if (!existing) {
+    const { error } = await (supabaseAdmin
+      .from('customer_profiles') as any)
+      .insert({
+        phone: customerPhone,
+        name: null,
+        email: null,
+        notes: null,
+      });
+
+    if (error) throw error;
+  }
+}
+
+/**
  * Get or create a conversation for a customer
  */
 export async function getOrCreateConversation(
   customerPhone: string,
   channel: 'voice' | 'sms' | 'whatsapp'
 ): Promise<string> {
+  // Ensure customer profile exists first
+  await getOrCreateCustomerProfile(customerPhone);
+
   // Check for existing active conversation
   const { data } = await supabaseAdmin
     .from('conversations')
