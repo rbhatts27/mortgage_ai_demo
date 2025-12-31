@@ -10,20 +10,22 @@ export async function getOrCreateConversation(
   channel: 'voice' | 'sms' | 'whatsapp'
 ): Promise<string> {
   // Check for existing active conversation
-  const { data: existing } = await supabaseAdmin
+  const { data } = await supabaseAdmin
     .from('conversations')
     .select('id')
     .eq('customer_phone', customerPhone)
     .eq('status', 'active')
     .single();
 
+  const existing = data as { id: string } | null;
+
   if (existing) {
     return existing.id;
   }
 
   // Create new conversation
-  const { data: newConv, error } = await supabaseAdmin
-    .from('conversations')
+  const { data: newConvData, error } = await (supabaseAdmin
+    .from('conversations') as any)
     .insert({
       customer_phone: customerPhone,
       channel,
@@ -34,6 +36,7 @@ export async function getOrCreateConversation(
     .single();
 
   if (error) throw error;
+  const newConv = newConvData as { id: string };
   return newConv.id;
 }
 
@@ -51,7 +54,9 @@ export async function getConversationHistory(
 
   if (error) throw error;
 
-  return (data || []).map((msg) => ({
+  const messages = data as Array<{ role: 'user' | 'assistant' | 'system'; content: string; created_at: string }> | null;
+
+  return (messages || []).map((msg) => ({
     role: msg.role,
     content: msg.content,
     timestamp: new Date(msg.created_at),
@@ -66,8 +71,8 @@ export async function saveMessage(
   role: 'user' | 'assistant' | 'system',
   content: string
 ): Promise<void> {
-  const { error } = await supabaseAdmin
-    .from('messages')
+  const { error } = await (supabaseAdmin
+    .from('messages') as any)
     .insert({
       conversation_id: conversationId,
       role,
@@ -142,8 +147,8 @@ function detectHandoffIntent(aiMessage: string, context: ConversationContext): b
  * Mark conversation as handed off
  */
 export async function markConversationHandedOff(conversationId: string): Promise<void> {
-  const { error } = await supabaseAdmin
-    .from('conversations')
+  const { error } = await (supabaseAdmin
+    .from('conversations') as any)
     .update({ status: 'handed_off' })
     .eq('id', conversationId);
 

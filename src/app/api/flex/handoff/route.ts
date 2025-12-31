@@ -19,11 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get customer profile information
-    const { data: profile } = await supabaseAdmin
+    const { data } = await supabaseAdmin
       .from('customer_profiles')
       .select('name, email')
       .eq('phone', customerPhone)
-      .single() as { data: { name: string | null; email: string | null } | null };
+      .single();
+
+    const profile = data as { name: string | null; email: string | null } | null;
 
     // Create Flex task
     const task = await twilioClient.taskrouter.v1
