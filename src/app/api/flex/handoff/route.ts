@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       .from('customer_profiles')
       .select('name, email')
       .eq('phone', customerPhone)
-      .single();
+      .single() as { data: { name: string | null; email: string | null } | null };
 
     // Create Flex task
     const task = await twilioClient.taskrouter.v1
