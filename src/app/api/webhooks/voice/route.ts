@@ -21,10 +21,15 @@ export async function POST(request: NextRequest) {
     const speechResult = body.SpeechResult as string;
     const callSid = body.CallSid as string;
 
-    // Get or create conversation
+    // Always get or create conversation (even for initial greeting)
     const conversationId = await getOrCreateConversation(customerPhone, 'voice');
 
-    // Save user message
+    // Save initial greeting message if this is the first interaction
+    if (!speechResult) {
+      await saveMessage(conversationId, 'assistant', 'Hello! I\'m Sarah, your AI mortgage assistant. How can I help you today?');
+    }
+
+    // Process user speech and generate response
     if (speechResult) {
       await saveMessage(conversationId, 'user', speechResult);
 
