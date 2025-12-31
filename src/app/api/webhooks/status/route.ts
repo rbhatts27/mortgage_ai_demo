@@ -3,8 +3,8 @@ import { validateTwilioSignature } from '@/lib/twilio';
 import { supabaseAdmin } from '@/lib/supabase';
 
 /**
- * Webhook to handle Twilio message status callbacks
- * Tracks delivery, read receipts, and failures
+ * Webhook to handle Twilio status callbacks
+ * Tracks message delivery status and call completion
  */
 export async function POST(request: NextRequest) {
   try {
@@ -20,28 +20,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
     }
 
-    // Extract status data
-    const messageSid = body.MessageSid as string;
-    const messageStatus = body.MessageStatus as string;
-    const errorCode = body.ErrorCode as string;
-    const errorMessage = body.ErrorMessage as string;
+    // Handle call status updates
+    if (body.CallSid) {
+      const callSid = body.CallSid as string;
+      const callStatus = body.CallStatus as string;
+      const from = body.From as string;
 
-    // Log status update
-    console.log('Message status update:', {
-      messageSid,
-      messageStatus,
-      errorCode,
-      errorMessage,
-    });
+      console.log('Call status update:', { callSid, callStatus, from });
 
-    // Store status update in database (optional)
-    // You could create a message_status table to track this
-    if (errorCode) {
-      console.error('Message delivery error:', {
+      // When call is completed, mark the voice conversation as completed
+      if (callStatus === 'completed' && from) {
+        const { error } = await (supabaseAdmin
+          .from('conversations') as any)
+          .update({ status: 'completed' })
+          .eq('customer_phone', from)
+          .eq('channel', 'voice')
+          .eq('status', 'active');
+
+        if (error) {
+          console.error('Error updating conversation status:', error);
+        } else {
+          console.log(`Marked voice conversation as completed for ${from}`);
+        }
+      }
+    }
+
+    // Handle message status updates
+    if (body.MessageSid) {
+      const messageSid = body.MessageSid as string;
+      const messageStatus = body.MessageStatus as string;
+      const errorCode = body.ErrorCode as string;
+      const errorMessage = body.ErrorMessage as string;
+
+      // Log status update
+      console.log('Message status update:', {
         messageSid,
+        messageStatus,
         errorCode,
         errorMessage,
       });
+
+      // Store status update in database (optional)
+      // You could create a message_status table to track this
+      if (errorCode) {
+        console.error('Message delivery error:', {
+          messageSid,
+          errorCode,
+          errorMessage,
+        });
+      }
     }
 
     return NextResponse.json({ success: true });
