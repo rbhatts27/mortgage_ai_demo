@@ -40,11 +40,12 @@ export async function getOrCreateConversation(
   // Ensure customer profile exists first
   await getOrCreateCustomerProfile(customerPhone);
 
-  // Check for existing active conversation
+  // Check for existing active conversation for this specific channel
   const { data } = await supabaseAdmin
     .from('conversations')
     .select('id')
     .eq('customer_phone', customerPhone)
+    .eq('channel', channel)
     .eq('status', 'active')
     .single();
 

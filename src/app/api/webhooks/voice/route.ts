@@ -54,12 +54,12 @@ export async function POST(request: NextRequest) {
 <Response>
   <Say voice="Polly.Joanna">${aiResponse.message}</Say>
   ${aiResponse.shouldHandoff
-    ? '<Dial><Queue>human_agents</Queue></Dial>'
+    ? '<Say voice="Polly.Joanna">Let me transfer you to a human agent. Please hold.</Say><Hangup/>'
     : `<Gather input="speech" action="${webhookUrl}" timeout="5" speechTimeout="auto">
     <Say voice="Polly.Joanna">How else can I help you?</Say>
   </Gather>
-  <Say voice="Polly.Joanna">I didn't hear anything. Let me connect you with a human agent.</Say>
-  <Dial><Queue>human_agents</Queue></Dial>`
+  <Say voice="Polly.Joanna">I didn't hear a response. Thank you for calling. Goodbye!</Say>
+  <Hangup/>`
   }
 </Response>`;
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   <Gather input="speech" action="${webhookUrl}" timeout="5" speechTimeout="auto">
     <Say voice="Polly.Joanna">Hello! I'm Sarah, your AI mortgage assistant. How can I help you today?</Say>
   </Gather>
-  <Say voice="Polly.Joanna">I didn't hear anything. Goodbye!</Say>
+  <Say voice="Polly.Joanna">I didn't hear a response. Thank you for calling. Goodbye!</Say>
   <Hangup/>
 </Response>`;
 
