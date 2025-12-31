@@ -1,10 +1,20 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
+interface ConversationRow {
+  id: string;
+  customer_phone: string;
+  channel: string;
+  status: string;
+  ai_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function GET() {
   try {
     // Get all conversations with customer info
-    const { data: conversations, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('conversations')
       .select(`
         id,
@@ -20,11 +30,13 @@ export async function GET() {
 
     if (error) throw error;
 
+    const conversations = data as ConversationRow[] | null;
+
     // Get message counts for each conversation
     const conversationsWithCounts = await Promise.all(
       (conversations || []).map(async (conv) => {
-        const { count } = await supabaseAdmin
-          .from('messages')
+        const { count } = await (supabaseAdmin
+          .from('messages') as any)
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', conv.id);
 
